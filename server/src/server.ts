@@ -4,11 +4,11 @@ import path from 'path';
 import apiRouter from '../routes/api';
 import cors from 'cors';
 import OpenAI from 'openai';
+import '../models/apiModels';
 
 dotenv.config();
 // Load .env.test explicitly
 dotenv.config({ path: path.resolve(__dirname, '../.env.test') });
-
 
 const PORT = process.env.PORT || 3000;
 const app = express();

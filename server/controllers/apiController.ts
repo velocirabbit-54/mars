@@ -3,6 +3,7 @@ import OpenAI from 'openai';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
+import model from '../models/apiModels';
 
 dotenv.config();
 
@@ -270,14 +271,36 @@ const apiController = {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const response = await fetch(NASA_POD_URL);
-      if (!response.ok) {
-        throw new Error(`Response status: ${response.status}`);
+      // https://stackoverflow.com/questions/1531093/how-do-i-get-the-current-date-in-javascript
+      // get today's data in the following format: "2025-05-01"
+      let today: any = new Date();
+      const dd = String(today.getDate()).padStart(2, '0'); //
+      const mm = String(today.getMonth() + 1).padStart(2, '0'); // January is 0!
+      const yyyy = String(today.getFullYear());
+
+      // "2025-05-01"
+      // today = yyyy + '-' + mm + '-' + dd;
+      today = yyyy.concat('-', mm, '-', dd);
+      console.log(today);
+      const podExists = await model.Pod.findOne({ date: today });
+
+      let response;
+      if (!podExists) {
+        console.log(`Picture for today's date: ${today}, doesn't exist.`);
+        response = await fetch(NASA_POD_URL);
+        if (!response.ok) {
+          throw new Error(`Response status: ${response.status}`);
+        }
+
+        const data = await response!.json();
+        const newPod = await model.Pod.create(data);
+        newPod.save();
+        res.locals.pod = newPod;
+        return next();
       }
 
-      const data = await response.json();
-      res.locals.pod = data;
-      // console.log(res.locals.pod);
+      console.log(`Pod exist for today's date: ${today}, it's:`, podExists);
+      res.locals.pod = podExists;
       return next();
     } catch (err) {
       return next({
@@ -338,11 +361,30 @@ const apiController = {
     client: OpenAI
   ): Promise<void> => {
     try {
-      const prompt = req.body.message;
+      const prompterino = req.body.message;
       // console.log('Prompt sent to OpenAI:', prompt); // Log the prompt
-      const response = await promptOpenAI(prompt, client);
+      const response = await promptOpenAI(prompterino, client);
+      // console.log(response);
       // console.log('OpenAI response:', response); // Log the OpenAI response
+
+      /*
+      X -> const podExists = await model.Pod.findOne({ date: today });
+      X -> const data = await response!.json();
+      
+      const newPod = await model.Pod.create(data);
+      
+      newPod.save();
+      res.locals.pod = newPod;
+      */
+      const newMessage = await model.Chat.create({
+        message: response,
+        prompt: prompterino,
+      });
+      newMessage.save();
       res.locals.response = response;
+
+      // find() <--- this will return you ALL values
+      // console.log(model.Chat.find()); // <--- Find all messages from Chat and console log them
       return next();
     } catch (err) {
       // console.error('Error in getResponse:', err); // Log the error
@@ -353,8 +395,6 @@ const apiController = {
       });
     }
   },
-
-  
 };
 
 export default apiController;
