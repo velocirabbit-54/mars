@@ -347,7 +347,7 @@ describe('GET /api/marsData', () => {
     nock.enableNetConnect();
   });
 
-  it('should return Mars data', async () => {
+  xit('should return Mars data', async () => {
     nock('https://api.nasa.gov')
       .get('/insight_weather/')
       .query(true)
@@ -369,7 +369,37 @@ describe('GET /api/marsData', () => {
     expect(res.body.mars[0].pressure).toBe('750 Pa');
     expect(res.body.mars[0].wind_speed).toBe('5 m/s');
   });
+
+  // more security rich version of the code
+  it('should return Mars data', async () => {
+    const apiKey = process.env.NASA_API_KEY || 'test_api_key';
+
+    nock('https://api.nasa.gov')
+    .get('/insight-weather/')
+    .query({ api_key: apiKey, feedtype: 'json', ver: '1.0' })
+    .reply(200, {
+      sol_keys: ['675'],
+      '675': {
+      AT: { av: -60, mn: -80, max: -20 }, 
+      PRE: { av: 750 },
+      HWS: { av: 5 },
+      },
+    });
+    const res = await request(app).get('/api/marsData').expect(200);
+
+    expect(res.body.mars).toBeDefined();
+    expect(res.body.mars[0].temp_avg).toBe('-60 °C');
+    expect(res.body.mars[0].temp_min).toBe('-80 °C');
+    expect(res.body.mars[0].temp_max).toBe('-20 °C');
+    expect(res.body.mars[0].pressure).toBe('750 Pa');
+    expect(res.body.mars[0].wind_speed).toBe('5 m/s');
+  })
+
+
 });
+
+
+
   
 
 //should not return Mars data
