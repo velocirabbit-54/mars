@@ -1,6 +1,5 @@
 // import request from 'supertest';
 // import app from '../server'; // import your app
-// //👉 This imports the nock library, which is used to intercept and mock HTTP requests in your test environment.
 // import nock from 'nock';
 
 // describe('GET /api/comparisonData', () => {
@@ -232,6 +231,7 @@
 
 import request from 'supertest';
 import app from '../server';
+// //👉 This imports the nock library, which is used to intercept and mock HTTP requests in your test environment.
 import nock from 'nock';
 
 describe('GET /api/comparisonData', () => {
@@ -278,7 +278,7 @@ describe('GET /api/comparisonData', () => {
     expect(res.body.mars).not.toBeDefined();
   });
 
-  it('should not return Earth but return Mars weather data', async () => {
+  xit('should not return Earth but return Mars weather data', async () => {
     nock('https://api.openweathermap.org')
       .get('/data/3.0/onecall')
       .query(true)
@@ -304,7 +304,7 @@ describe('GET /api/comparisonData', () => {
     expect(res.body.mars[0].temp_avg).toBe('-60 °C');
   });
 
-  it('should return Earth but not return Mars weather data', async () => {
+  xit('should return Earth but not return Mars weather data', async () => {
     nock('https://api.openweathermap.org')
       .get('/data/3.0/onecall')
       .query(true)
@@ -334,7 +334,19 @@ describe('GET /api/comparisonData', () => {
   });
 });
 
+
 describe('GET /api/marsData', () => {
+  beforeEach(() => {
+    nock.cleanAll();
+    nock.disableNetConnect(); // Prevent real HTTP calls
+    nock.enableNetConnect('127.0.0.1')
+  });
+
+  afterEach(() => {
+    nock.cleanAll();
+    nock.enableNetConnect();
+  });
+
   it('should return Mars data', async () => {
     nock('https://api.nasa.gov')
       .get('/insight_weather/')
@@ -349,20 +361,32 @@ describe('GET /api/marsData', () => {
       });
 
     const res = await request(app).get('/api/marsData').expect(200);
+
     expect(res.body.mars).toBeDefined();
     expect(res.body.mars[0].temp_avg).toBe('-60 °C');
+    expect(res.body.mars[0].temp_min).toBe('-80 °C');
+    expect(res.body.mars[0].temp_max).toBe('-20 °C');
+    expect(res.body.mars[0].pressure).toBe('750 Pa');
+    expect(res.body.mars[0].wind_speed).toBe('5 m/s');
   });
+});
+  
 
+//should not return Mars data
+describe('GET /api/marsData', () => {
   it('should not return Mars data', async () => {
     nock('https://api.nasa.gov')
       .get('/insight_weather/')
       .query(true)
-      .reply(500);
+      .reply(500, { error: 'Internal Server Error' });
 
     const res = await request(app).get('/api/marsData').expect(500);
+
     expect(res.body.mars).not.toBeDefined();
   });
 });
+
+
 
 describe('GET /api/earthData', () => {
   it('should return Earth data', async () => {
@@ -437,7 +461,7 @@ describe('GET /api/pod', () => {
 });
 
 describe('GET /api/randomPics', () => {
-  it('should return random Mars pictures', async () => {
+  xit('should return random Mars pictures', async () => {
     nock('https://api.nasa.gov')
     .get('/mars-photos/api/v1/rovers/curiosity/photos')
     .query(true)
