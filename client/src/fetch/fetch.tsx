@@ -37,6 +37,73 @@ export const useComparisonData = (latitude: number, longitude: number) => {
     return { comparisonData, comparisonDataError };
 };
 
+// Earth Hook
+export const useEarthData = (latitude: number, longitude: number) => {
+    // comparison data useState
+    const [earthData, setEarthData] = useState<any>(null);
+    const [earthDataError, setEarthDataError] = useState<string | null>(null);
+    
+
+    useEffect (() => {
+        // fetch request for comparison data
+        const fetchEarthData = async () => { 
+
+            if (!latitude || !longitude) {
+                setEarthDataError('Missing Latitude/Longitude');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/earthData?lat=${latitude}&lon=${longitude}`);
+
+            if(!response.ok) throw new Error('Network response not ok');
+            
+            const data = await response.json();
+            setEarthData(data);
+
+            } catch (err) {
+                if (err instanceof Error) setEarthDataError(err.message); 
+                else setEarthDataError('An error occurred in fetchcomparisonData');
+            }
+        };
+
+        fetchEarthData();
+    }, [latitude, longitude]);
+
+    return { earthData, earthDataError };
+};
+
+// Mars Hook
+export const useMarsData = () => {
+    // comparison data useState
+    const [marsData, setMarsData] = useState<string | null>(null);
+    const [marsDataError, setMarsDataError] = useState<string | null>(null);
+    
+
+    useEffect (() => {
+        // fetch request for comparison data
+        const fetchMarsData = async () => { 
+
+
+            try {
+                const response = await fetch(`/api/marsData`);
+
+            if(!response.ok) throw new Error('Network response not ok');
+            
+            const data = await response.json();
+            setMarsData(data);
+
+            } catch (err) {
+                if (err instanceof Error) setMarsDataError(err.message); 
+                else setMarsDataError('An error occurred in fetchMarsData');
+            }
+        };
+
+        fetchMarsData();
+    }, []);
+
+    return { marsData, marsDataError };
+};
 
 // custon hook for pod
 export const usePodData = () => {
