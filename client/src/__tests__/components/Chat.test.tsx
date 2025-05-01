@@ -1,11 +1,9 @@
 import '@testing-library/jest-dom';
-import * as React from 'react';
-import { render, fireEvent, screen, within } from '@testing-library/react';
+import { render, fireEvent, screen } from '@testing-library/react';
 import Chat from '../../components/Chat';
-// import App from '../../App.tsx';
 
 /*
-#3 Test cases to consider (ex: Chat)
+Test cases to consider (ex: Chat)
 
 - What components do we want to render?
 - User interaction:
@@ -15,14 +13,6 @@ import Chat from '../../components/Chat';
   \_ Does pressing Enter work?
 - Does the component receive/respond to props?
 - Are messages added correctly?
-
-#4 Testing technique
-
-- render (render component)
-- screen (queries to find elements)
-- userEvent (simulate user interaction)
-- fireEvent (basic events)
-- expect (assertion)
 */
 
 describe('Chat component', () => {
@@ -33,8 +23,20 @@ describe('Chat component', () => {
   };
 
   beforeEach(() => {
+    Element.prototype.scrollIntoView = jest.fn();
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    // create & assign fetch mock with proper typing.
+    const mockFetch = jest.fn();
+    window.fetch = mockFetch;
+
     jest.clearAllMocks();
     chat = render(<Chat {...mockProps} />);
+  });
+
+  afterAll(() => {
+    // reset all console.errrors
+    jest.restoreAllMocks();
   });
 
   // 1. Render chat visible
@@ -159,5 +161,40 @@ describe('Chat component', () => {
     // this assumes your messages are in elements with class 'message'
     const messageElements = document.querySelectorAll('.message');
     expect(messageElements.length).toBe(0);
+  });
+
+  // 8. test API interaction
+  test('Makes API call and displays the response', async () => {
+    chat.rerender(<Chat {...mockProps} isVisible={true} />);
+
+    // return a successful response using mock fetch
+    window.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ response: 'Greetings from Mars!' }),
+    });
+
+    // Grab the input field element
+    const inputField = screen.getByPlaceholderText('Speak to Martian Axolotl');
+
+    // Type in and send a message
+    fireEvent.change(inputField, { target: { value: 'Hello Mars' } });
+    fireEvent.click(screen.getByRole('img'));
+
+    // Grab the response from our API call
+    await screen.findByText('Greetings from Mars!');
+
+    // confirm fetch was called with correct args
+    expect(window.fetch).toHaveBeenCalledWith('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: 'Hello Mars' }),
+    });
+
+    // verify 2 messages are displayed
+    expect(screen.getByText('Hello Mars')).toBeInTheDocument();
+    expect(screen.getByText('Greetings from Mars!')).toBeInTheDocument();
+
+    // Clean up
+    (window.fetch as jest.Mock).mockRestore();
   });
 });
