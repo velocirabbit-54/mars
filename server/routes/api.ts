@@ -8,6 +8,8 @@ const apiRouter = (client: OpenAI) => {
   // Test URL format (for POSTMAN): http://localhost:3000/api/comparisonData?lat=33.44&lon=-94.04
   // Test URL format (for POSTMAN): /api/comparisonData?lat=33.44&lon=-94.04
   // TODO: Process the data and only send to the front-end what's necessary
+
+  // Combination Data
   router.get(
     '/comparisonData',
     apiController.fetchEarthData,
@@ -15,6 +17,26 @@ const apiRouter = (client: OpenAI) => {
     // apiController.fetchImageOfEarthLocation,
     (req: Request, res: Response) => {
       res.status(200).json(res.locals.weatherData);
+    }
+  );
+
+    // Earth Data
+  router.get(
+    '/earthData',
+    apiController.fetchEarthData,
+    // apiController.fetchImageOfEarthLocation,
+    (req: Request, res: Response) => {
+      res.status(200).json({ earth: res.locals.weatherData?.earth});
+    }
+  );
+
+  // Mars Data
+  router.get(
+    '/marsData',
+    apiController.fetchMarsData,
+    // apiController.fetchImageOfEarthLocation,
+    (req: Request, res: Response) => {
+      res.status(200).json({ mars: res.locals.weatherData?.mars});
     }
   );
 
